@@ -1,0 +1,24 @@
+# Rust
+target/
+
+# Node
+node_modules/
+.next/
+out/
+.env.local
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
