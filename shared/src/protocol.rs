@@ -84,3 +84,43 @@ pub enum FrameError {
     #[error("incomplete payload: got {got} bytes, need {need}")]
     IncompletePayload { got: usize, need: usize },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn roundtrip_empty_payload() {
+        let room_id = [0xau8; 16];
+        let frame   = Frame::new(Opcode::Connect, room_id, vec![]);
+        let encoded = frame.encode();
+        assert_eq!(encoded.len(), HEADER_SIZE);
+        let decoded = Frame::decode(&encoded).unwrap();
+        assert_eq!(decoded.opcode, Opcode::Connect);
+        assert_eq!(decoded.room_id, room_id);
+        assert!(decoded.payload.is_empty());
+    }
+
+    #[test]
+    fn roundtrip_with_payload() {
+        let room_id = [0x1u8; 16];
+        let payload = b"hello crdt world".to_vec();
+        let frame   = Frame::new(Opcode::Update, room_id, payload.clone());
+        let decoded = Frame::decode(&frame.encode()).unwrap();
+        assert_eq!(decoded.opcode, Opcode::Update);
+        assert_eq!(decoded.payload, payload);
+    }
+
+    #[test]
+    fn decode_rejects_wrong_version() {
+        let mut data = vec![0u8; HEADER_SIZE];
+        data[0] = 0xFF;
+        assert!(matches!(Frame::decode(&data), Err(FrameError::VersionMismatch { .. })));
+    }
+
+    #[test]
+    fn decode_rejects_short_buffer() {
+        let data = vec![1u8; 10];
+        assert!(matches!(Frame::decode(&data), Err(FrameError::TooShort { .. })));
+    }
+}
