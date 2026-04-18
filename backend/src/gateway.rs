@@ -21,12 +21,16 @@ pub async fn ws_handler(
     Path(room_id_str): Path<String>,
     State(state): State<AppState>,
 ) -> Response {
-    let room_id = Uuid::parse_str(&room_id_str).unwrap_or_else(|_| Uuid::new_v4());
+    let room_id = match Uuid::parse_str(&room_id_str) {
+        Ok(id) => id,
+        Err(_) => Uuid::new_v4(),
+    };
     ws.on_upgrade(move |socket| handle_socket(socket, room_id, state))
 }
 
 async fn handle_socket(socket: WebSocket, room_id: Uuid, state: AppState) {
     let client_id = Uuid::new_v4();
+    tracing::info!(client=%client_id, room=%room_id, "websocket connection established");
 
     let room_tx = state
         .rooms
@@ -39,7 +43,11 @@ async fn handle_socket(socket: WebSocket, room_id: Uuid, state: AppState) {
         .clone();
 
     let (client_tx, mut client_rx) = mpsc::channel::<Frame>(512);
-    let _ = room_tx.send(RoomMessage::Connect { client_id, tx: client_tx }).await;
+
+    if room_tx.send(RoomMessage::Connect { client_id, tx: client_tx }).await.is_err() {
+        tracing::warn!("room actor unavailable for room {room_id}");
+        return;
+    }
 
     let (mut ws_sink, mut ws_stream) = socket.split();
 
@@ -56,12 +64,14 @@ async fn handle_socket(socket: WebSocket, room_id: Uuid, state: AppState) {
         match msg {
             Message::Binary(data) => {
                 if let Ok(frame) = Frame::decode(&data) {
-                    let msg = match frame.opcode {
+                    let out = match frame.opcode {
                         Opcode::Update   => RoomMessage::Update   { client_id, data: frame.payload },
                         Opcode::Presence => RoomMessage::Presence { client_id, data: frame.payload },
                         _ => continue,
                     };
-                    let _ = room_tx.send(msg).await;
+                    let _ = room_tx.send(out).await;
+                } else {
+                    tracing::warn!(client=%client_id, "frame decode error");
                 }
             }
             Message::Close(_) => break,
@@ -69,6 +79,7 @@ async fn handle_socket(socket: WebSocket, room_id: Uuid, state: AppState) {
         }
     }
 
+    tracing::info!(client=%client_id, room=%room_id, "connection closed");
     let _ = room_tx.send(RoomMessage::Disconnect { client_id }).await;
     send_task.abort();
 }
