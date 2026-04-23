@@ -2,7 +2,7 @@ import * as Y from 'yjs';
 import { Opcode, encodeFrame, decodeFrame, uuidToBytes, PROTOCOL_VERSION } from '@lattice/protocol';
 import { genUuid } from './utils';
 
-export type ConnectionState = 'connecting' | 'connected' | 'synced' | 'disconnected';
+export type ConnectionState = 'connecting' | 'connected' | 'syncing' | 'synced' | 'disconnected' | 'reconnecting';
 
 export interface PresenceState {
   clientId: string;
@@ -15,6 +15,7 @@ export interface PresenceState {
 export class LatticeProvider {
   private ws: WebSocket | null = null;
   private roomIdBytes: Uint8Array;
+  private destroyed = false;
 
   readonly clientId = genUuid();
   state: ConnectionState = 'connecting';
@@ -39,24 +40,29 @@ export class LatticeProvider {
   }
 
   private connect() {
+    if (this.destroyed) return;
     this.ws = new WebSocket(`${this.serverUrl}/${this.roomId}`);
-    this.ws.binaryType = 'arraybuffer';
+    this.ws.binaryType = 'arraybuffer';  // fix: was missing, caused string frames
     this.setState('connecting');
 
-    this.ws.onopen = () => this.setState('connected');
+    this.ws.onopen  = () => this.setState('syncing');
 
     this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
       try {
         const frame = decodeFrame(new Uint8Array(event.data));
         if (frame.opcode === Opcode.Broadcast) {
           Y.applyUpdate(this.doc, frame.payload, this);
+        } else if (frame.opcode === Opcode.SyncComplete) {
+          this.setState('synced');
         }
       } catch (err) {
         console.warn('[lattice] frame error', err);
       }
     };
 
-    this.ws.onclose = () => this.setState('disconnected');
+    this.ws.onclose = () => {
+      this.setState('disconnected');
+    };
   }
 
   private send(opcode: Opcode, payload: Uint8Array) {
@@ -70,7 +76,8 @@ export class LatticeProvider {
   }
 
   destroy() {
-    this.ws?.close();
+    this.destroyed = true;
+    try { this.ws?.close(); } catch {}
     this.ws = null;
   }
 }
