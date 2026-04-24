@@ -31,12 +31,11 @@ impl RoomActor {
     async fn handle(&mut self, msg: RoomMessage) {
         match msg {
             RoomMessage::Connect { client_id, tx } => {
-                // replay accumulated updates to late-joining client
                 for update in &self.updates {
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, update.clone());
                     let _ = tx.send(frame).await;
                 }
-                let sync_done = Frame::new(Opcode::Broadcast, self.room_id_bytes, vec![]);
+                let sync_done = Frame::new(Opcode::SyncComplete, self.room_id_bytes, vec![]);
                 let _ = tx.send(sync_done).await;
                 self.clients.insert(client_id, tx);
                 tracing::debug!(room=%self.room_id, client=%client_id, "client joined, {} total", self.clients.len());
@@ -49,16 +48,16 @@ impl RoomActor {
 
             RoomMessage::Update { client_id, data } => {
                 self.updates.push(data.clone());
-                // broadcast to ALL clients including sender (fixed later)
-                for (_, tx) in &self.clients {
+                // fix: skip the sender so it doesn't echo its own update back
+                for (cid, tx) in &self.clients {
+                    if *cid == client_id { continue; }
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, data.clone());
                     let _ = tx.send(frame).await;
                 }
-                let _ = client_id;
             }
 
             RoomMessage::Presence { client_id: _, data: _ } => {
-                // presence broadcast coming next
+                // presence coming next
             }
         }
     }
