@@ -42,27 +42,49 @@ export class LatticeProvider {
   private connect() {
     if (this.destroyed) return;
     this.ws = new WebSocket(`${this.serverUrl}/${this.roomId}`);
-    this.ws.binaryType = 'arraybuffer';  // fix: was missing, caused string frames
+    this.ws.binaryType = 'arraybuffer';
     this.setState('connecting');
 
-    this.ws.onopen  = () => this.setState('syncing');
+    this.ws.onopen = () => this.setState('syncing');
 
     this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
       try {
         const frame = decodeFrame(new Uint8Array(event.data));
-        if (frame.opcode === Opcode.Broadcast) {
-          Y.applyUpdate(this.doc, frame.payload, this);
-        } else if (frame.opcode === Opcode.SyncComplete) {
-          this.setState('synced');
-        }
+        this.handleFrame(frame);
       } catch (err) {
-        console.warn('[lattice] frame error', err);
+        console.warn('[lattice] frame decode error', err);
       }
     };
 
-    this.ws.onclose = () => {
-      this.setState('disconnected');
-    };
+    this.ws.onclose = () => this.setState('disconnected');
+  }
+
+  private handleFrame(frame: ReturnType<typeof decodeFrame>) {
+    switch (frame.opcode) {
+      case Opcode.Broadcast:
+        Y.applyUpdate(this.doc, frame.payload, this);
+        break;
+      case Opcode.SyncComplete:
+        this.setState('synced');
+        break;
+      case Opcode.Presence: {
+        try {
+          const state = JSON.parse(new TextDecoder().decode(frame.payload)) as PresenceState;
+          if (state.clientId && state.clientId !== this.clientId) {
+            this.presence.set(state.clientId, state);
+            this.onPresence?.(Array.from(this.presence.values()));
+          }
+        } catch {}
+        break;
+      }
+    }
+  }
+
+  sendPresence(partial: Omit<PresenceState, 'clientId'>) {
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    const full: PresenceState = { ...partial, clientId: this.clientId };
+    const payload = new TextEncoder().encode(JSON.stringify(full));
+    this.send(Opcode.Presence, payload);
   }
 
   private send(opcode: Opcode, payload: Uint8Array) {

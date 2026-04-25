@@ -48,7 +48,6 @@ impl RoomActor {
 
             RoomMessage::Update { client_id, data } => {
                 self.updates.push(data.clone());
-                // fix: skip the sender so it doesn't echo its own update back
                 for (cid, tx) in &self.clients {
                     if *cid == client_id { continue; }
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, data.clone());
@@ -56,8 +55,12 @@ impl RoomActor {
                 }
             }
 
-            RoomMessage::Presence { client_id: _, data: _ } => {
-                // presence coming next
+            RoomMessage::Presence { client_id, data } => {
+                for (cid, tx) in &self.clients {
+                    if *cid == client_id { continue; }
+                    let frame = Frame::new(Opcode::Presence, self.room_id_bytes, data.clone());
+                    let _ = tx.send(frame).await;
+                }
             }
         }
     }
