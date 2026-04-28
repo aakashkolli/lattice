@@ -1,0 +1,13 @@
+{
+  "name": "lattice",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "shared/js"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspace=frontend"
+  }
+}
