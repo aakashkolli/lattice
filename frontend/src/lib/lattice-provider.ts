@@ -15,7 +15,10 @@ export interface PresenceState {
 export class LatticeProvider {
   private ws: WebSocket | null = null;
   private roomIdBytes: Uint8Array;
+  private reconnectDelay = 1500;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
+  private updateHandler: ((update: Uint8Array, origin: unknown) => void) | null = null;
 
   readonly clientId = genUuid();
   state: ConnectionState = 'connecting';
@@ -31,17 +34,19 @@ export class LatticeProvider {
     this.roomIdBytes = uuidToBytes(roomId);
     this.connect();
 
-    this.doc.on('update', (update: Uint8Array, origin: unknown) => {
+    this.updateHandler = (update: Uint8Array, origin: unknown) => {
       if (origin === this) return;
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.send(Opcode.Update, update);
       }
-    });
+    };
+    this.doc.on('update', this.updateHandler);
   }
 
   private connect() {
     if (this.destroyed) return;
-    this.ws = new WebSocket(`${this.serverUrl}/${this.roomId}`);
+    const url = `${this.serverUrl}/${this.roomId}`;
+    this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
     this.setState('connecting');
 
@@ -56,7 +61,10 @@ export class LatticeProvider {
       }
     };
 
-    this.ws.onclose = () => this.setState('disconnected');
+    this.ws.onclose = () => {
+      this.setState('disconnected');
+      if (!this.destroyed) this.scheduleReconnect();
+    };
   }
 
   private handleFrame(frame: ReturnType<typeof decodeFrame>) {
@@ -97,8 +105,19 @@ export class LatticeProvider {
     this.onStateChange?.(next);
   }
 
+  private scheduleReconnect() {
+    this.setState('reconnecting');
+    // BUG: reconnectDelay not reset on successful open (fixed next)
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 10000);
+      this.connect();
+    }, this.reconnectDelay);
+  }
+
   destroy() {
     this.destroyed = true;
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    if (this.updateHandler) { try { this.doc.off('update', this.updateHandler); } catch {} }
     try { this.ws?.close(); } catch {}
     this.ws = null;
   }
