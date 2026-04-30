@@ -45,12 +45,14 @@ export class LatticeProvider {
 
   private connect() {
     if (this.destroyed) return;
-    const url = `${this.serverUrl}/${this.roomId}`;
-    this.ws = new WebSocket(url);
+    this.ws = new WebSocket(`${this.serverUrl}/${this.roomId}`);
     this.ws.binaryType = 'arraybuffer';
     this.setState('connecting');
 
-    this.ws.onopen = () => this.setState('syncing');
+    this.ws.onopen = () => {
+      this.reconnectDelay = 1500;  // fix: reset backoff on successful open
+      this.setState('syncing');
+    };
 
     this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
       try {
@@ -65,6 +67,8 @@ export class LatticeProvider {
       this.setState('disconnected');
       if (!this.destroyed) this.scheduleReconnect();
     };
+
+    this.ws.onerror = () => {};
   }
 
   private handleFrame(frame: ReturnType<typeof decodeFrame>) {
@@ -107,7 +111,6 @@ export class LatticeProvider {
 
   private scheduleReconnect() {
     this.setState('reconnecting');
-    // BUG: reconnectDelay not reset on successful open (fixed next)
     this.reconnectTimer = setTimeout(() => {
       this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 10000);
       this.connect();
@@ -117,8 +120,12 @@ export class LatticeProvider {
   destroy() {
     this.destroyed = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    if (this.updateHandler) { try { this.doc.off('update', this.updateHandler); } catch {} }
-    try { this.ws?.close(); } catch {}
-    this.ws = null;
+    if (this.ws) {
+      this.ws.onmessage = null; this.ws.onopen = null; this.ws.onclose = null; this.ws.onerror = null;
+      try { this.ws.close(); } catch {}
+      this.ws = null;
+    }
+    if (this.updateHandler) { try { this.doc.off('update', this.updateHandler); } catch {} this.updateHandler = null; }
+    this.presence.clear();
   }
 }
