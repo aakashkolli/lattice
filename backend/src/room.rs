@@ -48,19 +48,27 @@ impl RoomActor {
 
             RoomMessage::Update { client_id, data } => {
                 self.updates.push(data.clone());
+                let mut dead = Vec::new();
                 for (cid, tx) in &self.clients {
                     if *cid == client_id { continue; }
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, data.clone());
-                    let _ = tx.send(frame).await;
+                    if tx.send(frame).await.is_err() {
+                        dead.push(*cid);
+                    }
                 }
+                for cid in dead { self.clients.remove(&cid); }
             }
 
             RoomMessage::Presence { client_id, data } => {
+                let mut dead = Vec::new();
                 for (cid, tx) in &self.clients {
                     if *cid == client_id { continue; }
                     let frame = Frame::new(Opcode::Presence, self.room_id_bytes, data.clone());
-                    let _ = tx.send(frame).await;
+                    if tx.send(frame).await.is_err() {
+                        dead.push(*cid);
+                    }
                 }
+                for cid in dead { self.clients.remove(&cid); }
             }
         }
     }
