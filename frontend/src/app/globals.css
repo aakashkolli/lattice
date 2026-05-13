@@ -1145,3 +1145,19 @@ html, body {
 .cm-md-host .katex {
   font-size: 1em;
 }
+
+/* ─── MATH WIDGETS (KaTeX) ──────────────────────────────── */
+
+.cm-math-widget {
+  display: inline-block;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.cm-math-widget.cm-math-display {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+.cm-math-widget .katex { font-size: 1em; }

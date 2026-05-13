@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import 'katex/dist/katex.min.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -9,8 +10,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Lattice',
-  description: 'Real-time collaborative document editor',
+  title: 'Lattice — Collaborative Documents',
+  description: 'Real-time collaborative document editor powered by CRDTs and a Rust backend',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
