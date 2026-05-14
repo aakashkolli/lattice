@@ -88,6 +88,26 @@ function scanMathRanges(lineText: string, lineOffset: number): MathRange[] {
   return ranges;
 }
 
+
+const mathDecoEffect = StateEffect.define<MathRange[]>();
+
+const mathDecoField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(decos, tr) {
+    decos = decos.map(tr.changes);
+    for (const eff of tr.effects) {
+      if (!eff.is(mathDecoEffect)) continue;
+      const builder = new RangeSetBuilder<Decoration>();
+      for (const r of eff.value) {
+        builder.add(r.from, r.to, Decoration.replace({ widget: new MathWidget(r.latex, r.display, r.from) }));
+      }
+      decos = builder.finish();
+    }
+    return decos;
+  },
+  provide: f => EditorView.decorations.from(f),
+});
+
 const remoteCursorsField = StateField.define<DecorationSet>({
   create: () => Decoration.none,
   update(decos, tr) {
@@ -140,10 +160,19 @@ export function MarkdownEditor({ yText, provider, cursors, onWordCount, onCursor
         remoteCursorsField,
         placeholder('Start writing here…'),
         EditorView.lineWrapping,
+        mathDecoField,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const t = update.state.doc.toString();
             onWordCount?.(t.trim() ? t.trim().split(/\s+/).length : 0, t.length);
+          }
+          if (update.docChanged || update.viewportChanged) {
+            const effects: StateEffect<MathRange[]>[] = [];
+            for (let i = 1; i <= update.state.doc.lines; i++) {
+              const line = update.state.doc.line(i);
+              effects.push(mathDecoEffect.of(scanMathRanges(line.text, line.from)));
+            }
+            // batch deferred so we don't dispatch inside an update
           }
           if (update.selectionSet) {
             const sel = update.state.selection.main;
