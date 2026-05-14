@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as Y from 'yjs';
-import { EditorState, StateEffect, StateField, Annotation } from '@codemirror/state';
+import { EditorState, StateEffect, StateField, Annotation, RangeSetBuilder } from '@codemirror/state';
 import {
   EditorView, Decoration, DecorationSet, WidgetType,
   ViewPlugin, ViewUpdate, keymap, placeholder,
@@ -12,9 +12,10 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, defaultHighlightStyle, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import katex from 'katex';
 import type { LatticeProvider, PresenceState } from '@/lib/lattice-provider';
 
-const LOCAL_ORIGIN  = Symbol('cm-local');
+const LOCAL_ORIGIN   = Symbol('cm-local');
 const syncAnnotation = Annotation.define<true>();
 
 const mdHighlight = HighlightStyle.define([
@@ -23,9 +24,11 @@ const mdHighlight = HighlightStyle.define([
   { tag: tags.heading3, fontSize: '1.2em',  fontWeight: '600' },
   { tag: tags.strong,   fontWeight: '700' },
   { tag: tags.emphasis, fontStyle: 'italic' },
-  { tag: tags.monospace, fontFamily: 'ui-monospace, monospace', background: 'rgba(0,0,0,0.06)', borderRadius: '3px', padding: '1px 4px' },
-  { tag: tags.link,     color: '#2563eb', textDecoration: 'underline' },
-  { tag: tags.quote,    color: '#6b7280', fontStyle: 'italic' },
+  { tag: tags.strikethrough, textDecoration: 'line-through' },
+  { tag: tags.monospace, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', background: 'rgba(0,0,0,0.06)', borderRadius: '3px', padding: '1px 4px' },
+  { tag: tags.link,  color: '#2563eb', textDecoration: 'underline' },
+  { tag: tags.quote, color: '#6b7280', fontStyle: 'italic' },
+  { tag: tags.processingInstruction, color: '#9ca3af' },
 ]);
 
 const setCursorsEffect = StateEffect.define<PresenceState[]>();
@@ -33,7 +36,7 @@ const setCursorsEffect = StateEffect.define<PresenceState[]>();
 class CursorWidget extends WidgetType {
   constructor(readonly color: string, readonly name: string) { super(); }
   toDOM() {
-    const el = document.createElement('span');
+    const el    = document.createElement('span');
     el.className = 'cm-collab-cursor';
     el.style.setProperty('--cc', this.color);
     const label = document.createElement('span');
@@ -43,6 +46,46 @@ class CursorWidget extends WidgetType {
     return el;
   }
   ignoreEvent() { return false; }
+}
+
+// ── LaTeX math widget ────────────────────────────────────────────────────────
+
+class MathWidget extends WidgetType {
+  constructor(readonly latex: string, readonly display: boolean, readonly from: number) { super(); }
+
+  eq(other: MathWidget) {
+    return other.latex === this.latex && other.display === this.display && other.from === this.from;
+  }
+
+  toDOM() {
+    const span = document.createElement('span');
+    span.className = this.display ? 'cm-math-widget cm-math-display' : 'cm-math-widget';
+    span.dataset.mathFrom = String(this.from);
+    span.innerHTML = katex.renderToString(this.latex, {
+      throwOnError: false,
+      displayMode: this.display,
+    });
+    return span;
+  }
+
+  ignoreEvent() { return false; }
+}
+
+interface MathRange { from: number; to: number; latex: string; display: boolean; }
+
+// NOTE: using /gs here for multiline $$ blocks — will need to fix tsconfig target later
+const MATH_RE = /\$\$(.+?)\$\$/gs;
+
+function scanMathRanges(lineText: string, lineOffset: number): MathRange[] {
+  const ranges: MathRange[] = [];
+  MATH_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = MATH_RE.exec(lineText)) !== null) {
+    const latex = m[1].trim();
+    if (!latex) continue;
+    ranges.push({ from: lineOffset + m.index, to: lineOffset + m.index + m[0].length, latex, display: true });
+  }
+  return ranges;
 }
 
 const remoteCursorsField = StateField.define<DecorationSet>({
@@ -95,13 +138,12 @@ export function MarkdownEditor({ yText, provider, cursors, onWordCount, onCursor
         syntaxHighlighting(mdHighlight),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         remoteCursorsField,
-        placeholder('Start writing here…\n\nShare the URL to collaborate in real time.'),
+        placeholder('Start writing here…'),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
-            const newText = update.state.doc.toString();
-            const w = newText.trim() ? newText.trim().split(/\s+/).length : 0;
-            onWordCount?.(w, newText.length);
+            const t = update.state.doc.toString();
+            onWordCount?.(t.trim() ? t.trim().split(/\s+/).length : 0, t.length);
           }
           if (update.selectionSet) {
             const sel = update.state.selection.main;
@@ -114,23 +156,19 @@ export function MarkdownEditor({ yText, provider, cursors, onWordCount, onCursor
     const view = new EditorView({ state: startState, parent: container });
     viewRef.current = view;
 
-    // Yjs → CodeMirror sync
     const yjsObserver = (delta: Y.YTextEvent) => {
       if (delta.transaction.origin === LOCAL_ORIGIN) return;
       let pos = 0;
       const changes: { from: number; to?: number; insert?: string }[] = [];
       delta.delta.forEach((op) => {
-        if (op.retain) { pos += op.retain; }
+        if (op.retain)  { pos += op.retain; }
         else if (op.delete) { changes.push({ from: pos, to: pos + op.delete }); pos += op.delete; }
         else if (op.insert) { changes.push({ from: pos, insert: String(op.insert) }); }
       });
-      if (changes.length > 0) {
-        view.dispatch({ changes, annotations: syncAnnotation.of(true) });
-      }
+      if (changes.length > 0) view.dispatch({ changes, annotations: syncAnnotation.of(true) });
     };
     yText.observe(yjsObserver);
 
-    // CodeMirror → Yjs sync
     const cmPlugin = ViewPlugin.define(() => ({
       update(u: ViewUpdate) {
         if (!u.docChanged || u.transactions.some((t) => t.annotation(syncAnnotation))) return;
@@ -151,14 +189,11 @@ export function MarkdownEditor({ yText, provider, cursors, onWordCount, onCursor
     };
   }, [yText, onWordCount, onCursorMove]);
 
-  // Sync remote cursors
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({ effects: setCursorsEffect.of(cursors) });
   }, [cursors]);
 
-  return (
-    <div ref={containerRef} className="cm-editor-host" />
-  );
+  return <div ref={containerRef} className="cm-editor-host" />;
 }
