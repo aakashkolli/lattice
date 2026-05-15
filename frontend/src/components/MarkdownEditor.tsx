@@ -73,8 +73,7 @@ class MathWidget extends WidgetType {
 
 interface MathRange { from: number; to: number; latex: string; display: boolean; }
 
-// NOTE: using /gs here for multiline $$ blocks — will need to fix tsconfig target later
-const MATH_RE = /\$\$(.+?)\$\$/gs;
+const MATH_RE = /\$\$(.+?)\$\$/g;
 
 function scanMathRanges(lineText: string, lineOffset: number): MathRange[] {
   const ranges: MathRange[] = [];
