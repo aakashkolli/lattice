@@ -1,8 +1,19 @@
 import * as Y from 'yjs';
-import { Opcode, encodeFrame, decodeFrame, uuidToBytes, PROTOCOL_VERSION } from '@lattice/protocol';
-import { genUuid } from './utils';
+import {
+  Opcode,
+  decodeFrame,
+  encodeFrame,
+  uuidToBytes,
+  PROTOCOL_VERSION,
+} from '@lattice/protocol';
 
-export type ConnectionState = 'connecting' | 'connected' | 'syncing' | 'synced' | 'disconnected' | 'reconnecting';
+export type ConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'syncing'
+  | 'synced'
+  | 'disconnected'
+  | 'reconnecting';
 
 export interface PresenceState {
   clientId: string;
@@ -12,17 +23,26 @@ export interface PresenceState {
   color: string;
 }
 
+function genClientId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export class LatticeProvider {
   private ws: WebSocket | null = null;
   private roomIdBytes: Uint8Array;
   private reconnectDelay = 1500;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
-  private updateHandler: ((update: Uint8Array, origin: unknown) => void) | null = null;
 
-  readonly clientId = genUuid();
+  /** Stable identity for this browser session — included in every presence payload. */
+  readonly clientId = genClientId();
+
   state: ConnectionState = 'connecting';
   presence = new Map<string, PresenceState>();
+
   onStateChange?: (state: ConnectionState) => void;
   onPresence?: (states: PresenceState[]) => void;
 
@@ -34,23 +54,29 @@ export class LatticeProvider {
     this.roomIdBytes = uuidToBytes(roomId);
     this.connect();
 
-    this.updateHandler = (update: Uint8Array, origin: unknown) => {
+    // Forward local Yjs updates to server.
+    // BUG-FIX: do NOT use `this` as a filter here — we want ALL local updates sent.
+    // Remote updates are applied with `this` as origin (see handleFrame) to prevent echo.
+    this.doc.on('update', (update: Uint8Array, origin: unknown) => {
+      // Skip updates that originated from applying a remote broadcast (origin === this)
+      // to avoid echoing back to the server.
       if (origin === this) return;
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.send(Opcode.Update, update);
       }
-    };
-    this.doc.on('update', this.updateHandler);
+    });
   }
 
   private connect() {
     if (this.destroyed) return;
-    this.ws = new WebSocket(`${this.serverUrl}/${this.roomId}`);
+
+    const url = `${this.serverUrl}/${this.roomId}`;
+    this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
     this.setState('connecting');
 
     this.ws.onopen = () => {
-      this.reconnectDelay = 1500;  // fix: reset backoff on successful open
+      this.reconnectDelay = 1500;
       this.setState('syncing');
     };
 
@@ -68,25 +94,33 @@ export class LatticeProvider {
       if (!this.destroyed) this.scheduleReconnect();
     };
 
-    this.ws.onerror = () => {};
+    this.ws.onerror = () => {
+      // onclose fires after onerror; no extra action needed.
+    };
   }
 
   private handleFrame(frame: ReturnType<typeof decodeFrame>) {
     switch (frame.opcode) {
       case Opcode.Broadcast:
+        // Mark origin as `this` so the doc.on('update') listener above skips re-sending.
         Y.applyUpdate(this.doc, frame.payload, this);
         break;
+
       case Opcode.SyncComplete:
         this.setState('synced');
         break;
+
       case Opcode.Presence: {
         try {
-          const state = JSON.parse(new TextDecoder().decode(frame.payload)) as PresenceState;
+          const text = new TextDecoder().decode(frame.payload);
+          const state = JSON.parse(text) as PresenceState;
           if (state.clientId && state.clientId !== this.clientId) {
             this.presence.set(state.clientId, state);
             this.onPresence?.(Array.from(this.presence.values()));
           }
-        } catch {}
+        } catch {
+          // ignore malformed presence
+        }
         break;
       }
     }
@@ -94,13 +128,20 @@ export class LatticeProvider {
 
   sendPresence(partial: Omit<PresenceState, 'clientId'>) {
     if (this.ws?.readyState !== WebSocket.OPEN) return;
+    // Include clientId so receivers can key presence state correctly.
     const full: PresenceState = { ...partial, clientId: this.clientId };
     const payload = new TextEncoder().encode(JSON.stringify(full));
     this.send(Opcode.Presence, payload);
   }
 
   private send(opcode: Opcode, payload: Uint8Array) {
-    const frame = encodeFrame({ version: PROTOCOL_VERSION, opcode, flags: 0, roomId: this.roomIdBytes, payload });
+    const frame = encodeFrame({
+      version: PROTOCOL_VERSION,
+      opcode,
+      flags: 0,
+      roomId: this.roomIdBytes,
+      payload,
+    });
     this.ws?.send(frame);
   }
 
@@ -120,12 +161,6 @@ export class LatticeProvider {
   destroy() {
     this.destroyed = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    if (this.ws) {
-      this.ws.onmessage = null; this.ws.onopen = null; this.ws.onclose = null; this.ws.onerror = null;
-      try { this.ws.close(); } catch {}
-      this.ws = null;
-    }
-    if (this.updateHandler) { try { this.doc.off('update', this.updateHandler); } catch {} this.updateHandler = null; }
-    this.presence.clear();
+    this.ws?.close();
   }
 }
