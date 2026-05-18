@@ -1,6 +1,6 @@
-# Lattice — Collaborative Editor
+# Lattice - CRDT Collaborative Text Editor
 
-A real-time collaborative editor with Markdown and comments support — built on CRDT synchronization, a Rust actor-model backend, and a custom binary WebSocket protocol.
+A real-time collaborative editor with Markdown and comments support, built on CRDT synchronization, a Rust actor-model backend, and a custom binary WebSocket protocol.
 
 Multiple users can edit the same document simultaneously across two modes: a plain text editor and a live-preview Markdown editor. Comments are anchored to text ranges using Yjs relative positions so they survive concurrent edits.
 
@@ -15,8 +15,6 @@ Multiple users can edit the same document simultaneously across two modes: a pla
 - Full GitHub Flavored Markdown: tables, task lists, fenced code blocks, footnotes
 - Syntax highlighting via highlight.js; HTML sanitized via rehype-sanitize
 - LaTeX math via KaTeX: `$inline$` and `$$display$$` syntax, Obsidian-compatible — dollar signs hide on non-cursor lines and render live using Computer Modern font
-
-<!-- Notebook UI and execution cells removed from the frontend. -->
 
 **Collaborative Comments**
 - Threaded comments with replies, reactions, and resolve/unresolve
@@ -42,7 +40,6 @@ flowchart TD
     C["Room Actor\nOne Tokio Task per Document"]
 
     C -- "Broadcast" --> D["All Connected Clients"]
-    %% Notebook execution removed from frontend architecture
 
     G["Shared Binary Protocol v2\nRust + TypeScript"] -.-> A
     G -.-> B
@@ -51,7 +48,7 @@ flowchart TD
 **Update flow (strict per CLAUDE.md):**
 
 ```
-Client → Gateway → Room Actor → Broadcast → Clients → (Persistence Pipeline)
+Client -> Gateway -> Room Actor -> Broadcast -> Clients -> (Persistence Pipeline)
 ```
 
 This flow is never bypassed. The Room Actor is the single writer for all document state.
@@ -67,7 +64,6 @@ This flow is never bypassed. The Room Actor is the single writer for all documen
 | Math | KaTeX (inline + display, Computer Modern font) |
 | Backend | Rust, Axum, Tokio |
 | Transport | WebSockets (binary frames) |
-| Execution | (removed — notebook execution disabled) |
 | Protocol | Shared Rust + TypeScript binary format |
 | Concurrency | Actor model — one Tokio task per room |
 | Benchmarking | HDR histogram multi-client harness |
@@ -82,14 +78,14 @@ Current version: **2** (bumped from v1 when execution opcodes were added).
 
 | Opcode | Value | Direction | Purpose |
 |---|---|---|---|
-| Connect | 0x01 | C→S | Join room |
-| Update | 0x02 | C→S | Yjs CRDT update |
-| Broadcast | 0x03 | S→C | Fan-out CRDT update |
+| Connect | 0x01 | C->S | Join room |
+| Update | 0x02 | C->S | Yjs CRDT update |
+| Broadcast | 0x03 | S->C | Fan-out CRDT update |
 | Presence | 0x04 | C↔S | Cursor/awareness state |
 | Heartbeat | 0x05 | — | Keep-alive |
-| Sync | 0x06 | S→C | State replay start |
-| SyncComplete | 0x07 | S→C | State replay done |
-| Disconnect | 0x08 | C→S | Leave room |
+| Sync | 0x06 | S->C | State replay start |
+| SyncComplete | 0x07 | S->C | State replay done |
+| Disconnect | 0x08 | C->S | Leave room |
 <!-- Execution opcodes (cell execution, streaming output, cancel) removed from frontend docs. -->
 
 The protocol definition is the single source of truth in `shared/` and is mirrored identically in Rust and TypeScript.
@@ -166,7 +162,7 @@ cargo run --release -p lattice-bench -- \
 
 Example output:
 
-```
+```text
 lattice-bench  clients=10 messages=200 payload=64B room=<uuid>
 
 ─────────────────────────────────────────
@@ -190,7 +186,7 @@ RTT latency (client -> server -> client echo):
 
 ## Repo Structure
 
-```
+```text
 lattice/
 ├── backend/          Rust Axum gateway + Room Actor
 ├── bench/            Multi-client benchmarking suite
@@ -204,7 +200,6 @@ lattice/
 │       │   ├── Editor.tsx           Top-level orchestrator (mode + comments)
 │       │   ├── TextEditor.tsx       Plain text / Markdown source pane
 │       │   ├── MarkdownPreview.tsx  Live rehype render of Y.Text
-│       │   <!-- Notebook components removed from frontend: NotebookEditor, CodeCell, MarkdownCell, ExecutionToolbar -->
 │       │   ├── CommentsPane.tsx     Comments sidebar
 │       │   ├── CommentThread.tsx    Thread + replies (CRDT-backed)
 │       │   ├── CommentComposer.tsx  Compose / reply form
@@ -213,28 +208,11 @@ lattice/
 │       │   └── StatusBar.tsx        Connection state + word count
 │       └── lib/
 │           ├── lattice-provider.ts  WebSocket client + Yjs bridge
-│           ├── markdown.ts          remark → rehype rendering pipeline
+│           ├── markdown.ts          remark -> rehype rendering pipeline
 │           └── utils.ts             UUID, color hashing
 ├── infra/            docker-compose for supporting services
 └── docs/             Architecture notes
 ```
 
----
 
-## Verify End-to-End
 
-```bash
-# Terminal 1
-cargo run -p lattice-backend
-
-# Terminal 2
-npm run dev --workspace=frontend
-```
-
-Then open `http://localhost:3000` in two tabs and verify:
-
-- **Text mode**: type in one tab, changes appear in the other
-- **Markdown mode**: switch via the toolbar toggle; preview updates in real time across both tabs
-- **Math**: type `$x^2$` or `$$\int_0^\infty e^{-x^2} dx$$`, move cursor off the line — renders as KaTeX; click to edit raw source
-- **Comments**: select text, click `+ Comment`, write a comment; open a second tab and confirm the thread appears; reply from the second tab
-- **Reconnect**: close and reopen a tab — all document state, outputs, and comments are replayed from the Room Actor's accumulated update log
