@@ -4,18 +4,34 @@ use uuid::Uuid;
 
 use lattice_shared::protocol::{Frame, Opcode};
 
+/// Messages the gateway sends into the Room Actor's mailbox.
 pub enum RoomMessage {
-    Connect    { client_id: Uuid, tx: mpsc::Sender<Frame> },
-    Disconnect { client_id: Uuid },
-    Update     { client_id: Uuid, data: Vec<u8> },
-    Presence   { client_id: Uuid, data: Vec<u8> },
+    Connect {
+        client_id: Uuid,
+        /// Channel for pushing frames back to this specific client.
+        tx: mpsc::Sender<Frame>,
+    },
+    Disconnect {
+        client_id: Uuid,
+    },
+    /// Raw Yjs update bytes from a client — broadcast to all others, stored for late-joiners.
+    Update {
+        client_id: Uuid,
+        data: Vec<u8>,
+    },
+    /// Awareness / cursor presence — broadcast only, never stored.
+    Presence {
+        client_id: Uuid,
+        data: Vec<u8>,
+    },
 }
 
 struct RoomActor {
-    room_id:       Uuid,
+    room_id: Uuid,
     room_id_bytes: [u8; 16],
-    clients:       HashMap<Uuid, mpsc::Sender<Frame>>,
-    updates:       Vec<Vec<u8>>,
+    clients: HashMap<Uuid, mpsc::Sender<Frame>>,
+    /// Accumulated Yjs update log. Replayed to new clients on join.
+    updates: Vec<Vec<u8>>,
 }
 
 impl RoomActor {
@@ -31,12 +47,16 @@ impl RoomActor {
     async fn handle(&mut self, msg: RoomMessage) {
         match msg {
             RoomMessage::Connect { client_id, tx } => {
+                // Replay all accumulated updates so the new client reaches current state.
                 for update in &self.updates {
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, update.clone());
                     let _ = tx.send(frame).await;
                 }
+
+                // Signal that initial sync is complete.
                 let sync_done = Frame::new(Opcode::SyncComplete, self.room_id_bytes, vec![]);
                 let _ = tx.send(sync_done).await;
+
                 self.clients.insert(client_id, tx);
                 tracing::debug!(room=%self.room_id, client=%client_id, "client joined, {} total", self.clients.len());
             }
@@ -48,37 +68,50 @@ impl RoomActor {
 
             RoomMessage::Update { client_id, data } => {
                 self.updates.push(data.clone());
+
+                // Fan-out to every other connected client.
                 let mut dead = Vec::new();
                 for (cid, tx) in &self.clients {
-                    if *cid == client_id { continue; }
+                    if *cid == client_id {
+                        continue;
+                    }
                     let frame = Frame::new(Opcode::Broadcast, self.room_id_bytes, data.clone());
                     if tx.send(frame).await.is_err() {
                         dead.push(*cid);
                     }
                 }
-                for cid in dead { self.clients.remove(&cid); }
+                for cid in dead {
+                    self.clients.remove(&cid);
+                }
             }
 
             RoomMessage::Presence { client_id, data } => {
                 let mut dead = Vec::new();
                 for (cid, tx) in &self.clients {
-                    if *cid == client_id { continue; }
+                    if *cid == client_id {
+                        continue;
+                    }
                     let frame = Frame::new(Opcode::Presence, self.room_id_bytes, data.clone());
                     if tx.send(frame).await.is_err() {
                         dead.push(*cid);
                     }
                 }
-                for cid in dead { self.clients.remove(&cid); }
+                for cid in dead {
+                    self.clients.remove(&cid);
+                }
             }
         }
     }
 }
 
+/// Tokio task entry point for a room. Runs until all senders are dropped.
 pub async fn run_room_actor(room_id: Uuid, mut rx: mpsc::Receiver<RoomMessage>) {
     let mut actor = RoomActor::new(room_id);
     tracing::info!(room=%room_id, "room actor started");
+
     while let Some(msg) = rx.recv().await {
         actor.handle(msg).await;
     }
+
     tracing::info!(room=%room_id, "room actor terminated");
 }
