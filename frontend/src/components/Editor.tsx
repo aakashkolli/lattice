@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import * as Y from 'yjs';
 import { LatticeProvider, ConnectionState, PresenceState } from '@/lib/lattice-provider';
 import { Toolbar, ExportFormat, EditorMode } from './Toolbar';
+import { useTheme } from '@/lib/use-theme';
 import dynamic from 'next/dynamic';
 import { genUuid, hashColor } from '@/lib/utils';
 import { StatusBar } from './StatusBar';
@@ -28,6 +29,7 @@ interface Props {
 
 export function Editor({ roomId, serverUrl }: Props) {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const providerRef = useRef<LatticeProvider | null>(null);
   const yTextRef = useRef<Y.Text | null>(null);
@@ -209,6 +211,9 @@ export function Editor({ roomId, serverUrl }: Props) {
         cursors={cursors}
         mode={mode}
         commentsOpen={commentsOpen}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        yText={yTextRef.current}
         onTitleChange={handleTitleChange}
         onShare={() => setShareOpen(true)}
         onNewRoom={handleNewRoom}
