@@ -52,19 +52,22 @@ const MODE_LABELS: Record<EditorMode, string> = {
 };
 
 function AvatarCard({ cursor, yText }: { cursor: PresenceState; yText: string | null }) {
+  const [lastChanged, setLastChanged] = useState(0);
   const prevFromRef = useRef(cursor.cursorFrom);
-  const changedAtRef = useRef(Date.now());
 
   useEffect(() => {
-    if (prevFromRef.current !== cursor.cursorFrom) {
+    if (cursor.cursorFrom !== prevFromRef.current) {
       prevFromRef.current = cursor.cursorFrom;
-      changedAtRef.current = Date.now();
+      const now = Date.now();
+      setLastChanged(now);
+      const id = setTimeout(() => setLastChanged((t) => (t === now ? 0 : t)), 2000);
+      return () => clearTimeout(id);
     }
-  });
+  }, [cursor.cursorFrom]);
+
+  const isTyping = lastChanged > 0 && Date.now() - lastChanged < 2000;
 
   const color = avatarColor(cursor.name);
-  const isTyping = prevFromRef.current !== cursor.cursorFrom || Date.now() - changedAtRef.current < 2000;
-
   let lineLabel: string | null = null;
   if (yText !== null && cursor.cursorFrom > 0) {
     lineLabel = `line ${yText.slice(0, cursor.cursorFrom).split('\n').length}`;
@@ -277,7 +280,7 @@ export function Toolbar({
               </div>
             ))}
             {overflow > 0 && (
-              <div className="avatar avatar-overflow" style={{ marginLeft: -6 }}>+{overflow}</div>
+              <div className="avatar avatar-overflow">+{overflow}</div>
             )}
           </div>
         )}

@@ -234,6 +234,10 @@ html, body {
   font-weight: 600;
 }
 
+.avatar-stack > .avatar-overflow {
+  margin-left: -6px;
+}
+
 /* ─── AVATAR WRAPPER + TOOLTIP ───────────────────────── */
 
 .avatar-wrapper {
