@@ -27,21 +27,15 @@ export function useTheme(): { theme: Theme; toggleTheme: () => void } {
   );
 
   useEffect(() => {
-    const initial = getPreferredTheme();
-    setTheme(initial);
-    applyTheme(initial);
-
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only update if there is no localStorage override
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored !== 'light' && stored !== 'dark') {
-        const next: Theme = e.matches ? 'dark' : 'light';
-        setTheme(next);
-        applyTheme(next);
+        const t: Theme = e.matches ? 'dark' : 'light';
+        setTheme(t);
+        applyTheme(t);
       }
     };
-
     mq.addEventListener('change', handleChange);
     return () => mq.removeEventListener('change', handleChange);
   }, []);
