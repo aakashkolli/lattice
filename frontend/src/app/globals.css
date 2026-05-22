@@ -47,6 +47,22 @@
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,.08), 0 10px 10px -5px rgba(0,0,0,.03);
 }
 
+[data-theme="dark"] {
+  --bg:          #111111;
+  --surface:     #1a1a1a;
+  --surface-2:   #222222;
+  --border:      #2a2a2a;
+  --border-2:    #333333;
+  --text:        #f5f5f5;
+  --text-2:      #a3a3a3;
+  --text-muted:  #737373;
+  --text-faint:  #525252;
+  --primary:       #f5f5f5;
+  --primary-dark:  #ffffff;
+  --primary-light: #1f1f1f;
+  --primary-ring:  rgba(255,255,255,.12);
+}
+
 html, body {
   height: 100%;
   font-family: var(--font);
