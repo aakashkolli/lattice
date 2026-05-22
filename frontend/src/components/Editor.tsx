@@ -53,6 +53,9 @@ export function Editor({ roomId, serverUrl }: Props) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [mdSelection, setMdSelection] = useState<{ from: number; to: number } | null>(null);
+  const [commentsWidth, setCommentsWidth] = useState(320);
+  const resizingRef = useRef(false);
+  const resizeStartRef = useRef({ x: 0, width: 0 });
 
   useEffect(() => {
     const doc = new Y.Doc();
@@ -168,6 +171,24 @@ export function Editor({ roomId, serverUrl }: Props) {
     }
   }, []);
 
+  const handleResizerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    resizingRef.current = true;
+    resizeStartRef.current = { x: e.clientX, width: commentsWidth };
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const delta = resizeStartRef.current.x - ev.clientX;
+      setCommentsWidth(Math.max(200, Math.min(600, resizeStartRef.current.width + delta)));
+    };
+    const onUp = () => {
+      resizingRef.current = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [commentsWidth]);
+
   if (!initialized || !yTextRef.current || !providerRef.current || !docRef.current) {
     return (
       <div className="app-root">
@@ -247,16 +268,20 @@ export function Editor({ roomId, serverUrl }: Props) {
         {mainContent}
 
         {commentsOpen && (
-          <CommentsPane
-            doc={doc}
-            yText={yText}
-            selfId={userIdRef.current}
-            selfName={userNameRef.current}
-            textareaRef={textareaRef}
-            selectionOverride={mode === 'markdown' ? mdSelection : undefined}
-            activeThreadId={activeThreadId}
-            onActiveThread={setActiveThreadId}
-          />
+          <>
+            <div className="comments-resizer" onMouseDown={handleResizerMouseDown} />
+            <CommentsPane
+              doc={doc}
+              yText={yText}
+              selfId={userIdRef.current}
+              selfName={userNameRef.current}
+              textareaRef={textareaRef}
+              selectionOverride={mode === 'markdown' ? mdSelection : undefined}
+              activeThreadId={activeThreadId}
+              onActiveThread={setActiveThreadId}
+              width={commentsWidth}
+            />
+          </>
         )}
       </div>
 
