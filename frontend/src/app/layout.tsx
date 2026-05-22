@@ -22,8 +22,9 @@ const themeScript = `(function(){try{var s=localStorage.getItem('lattice_theme')
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-      <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );

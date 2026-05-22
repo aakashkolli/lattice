@@ -212,7 +212,7 @@ export function Editor({ roomId, serverUrl }: Props) {
     <div className="app-root">
       <Toolbar
         title={title}
-        cursors={cursors}
+        cursors={[{ clientId: userIdRef.current, name: userNameRef.current, color: hashColor(userNameRef.current), cursorFrom: 0, cursorTo: 0 }, ...cursors]}
         mode={mode}
         commentsOpen={commentsOpen}
         theme={theme}
