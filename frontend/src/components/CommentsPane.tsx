@@ -17,6 +17,7 @@ interface Props {
   /** Currently active (selected) thread id */
   activeThreadId: string | null;
   onActiveThread: (id: string | null) => void;
+  width?: number;
 }
 
 interface ThreadSummary {
@@ -44,7 +45,7 @@ function readThreads(yComments: Y.Map<unknown>): ThreadSummary[] {
   return result.sort((a, b) => a.createdAt - b.createdAt);
 }
 
-export function CommentsPane({ doc, yText, selfId, selfName, textareaRef, selectionOverride, activeThreadId, onActiveThread }: Props) {
+export function CommentsPane({ doc, yText, selfId, selfName, textareaRef, selectionOverride, activeThreadId, onActiveThread, width }: Props) {
   const yComments = doc.getMap<unknown>('comments');
   const [threads, setThreads] = useState<ThreadSummary[]>(() => readThreads(yComments));
   const [composing, setComposing] = useState(false);
@@ -110,6 +111,7 @@ export function CommentsPane({ doc, yText, selfId, selfName, textareaRef, select
     thread.set('text', text);
     const replies = new Y.Array<Y.Map<unknown>>();
     thread.set('replies', replies);
+    thread.set('reactions', new Y.Map<unknown>());
 
     yComments.set(threadId, thread);
     setComposing(false);
@@ -128,7 +130,7 @@ export function CommentsPane({ doc, yText, selfId, selfName, textareaRef, select
   const unresolvedCount = threads.filter((t) => !t.resolved).length;
 
   return (
-    <div className="comments-pane">
+    <div className="comments-pane" style={width !== undefined ? { width } : undefined}>
       <div className="comments-header">
         <span className="comments-title">
           Comments

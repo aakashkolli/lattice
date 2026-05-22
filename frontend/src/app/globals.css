@@ -5,6 +5,8 @@
 }
 
 :root {
+  color-scheme: light;
+
   /* Surfaces */
   --bg:        #fafafa;
   --surface:   #ffffff;
@@ -45,6 +47,49 @@
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -1px rgba(0,0,0,.05);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -2px rgba(0,0,0,.04);
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,.08), 0 10px 10px -5px rgba(0,0,0,.03);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:          #111111;
+  --surface:     #1a1a1a;
+  --surface-2:   #222222;
+  --border:      #2a2a2a;
+  --border-2:    #333333;
+  --text:        #f5f5f5;
+  --text-2:      #a3a3a3;
+  --text-muted:  #737373;
+  --text-faint:  #525252;
+  --primary:       #f5f5f5;
+  --primary-dark:  #ffffff;
+  --primary-light: #1f1f1f;
+  --primary-ring:  rgba(255,255,255,.12);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+  --shadow:    0 1px 3px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.18);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.3), 0 2px 4px -1px rgba(0,0,0,.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.3), 0 4px 6px -2px rgba(0,0,0,.18);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,.3), 0 10px 10px -5px rgba(0,0,0,.15);
+}
+
+[data-theme="dark"] .btn-primary { color: #0a0a0a; }
+[data-theme="dark"] .btn-primary:hover { color: #0a0a0a; }
+[data-theme="dark"] .copy-btn { color: #0a0a0a; }
+[data-theme="dark"] .copy-btn.copied { background: #15803d; color: #fff; }
+
+[data-theme="dark"] .btn-danger { background: #2d1515; border-color: #5c1f1f; }
+[data-theme="dark"] .btn-danger:hover { background: #3d1a1a; }
+
+[data-theme="dark"] .avatar-tooltip {
+  background: #f0f0f0;
+  color: #0a0a0a;
+}
+[data-theme="dark"] .avatar-tooltip-detail {
+  color: #525252;
+}
+[data-theme="dark"] .typing-dot {
+  background: #525252;
 }
 
 html, body {
@@ -91,13 +136,21 @@ html, body {
   white-space: nowrap;
   text-decoration: none;
   color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.toolbar-brand:hover {
+  opacity: 0.7;
 }
 
 .toolbar-logo {
   width: 28px;
   height: 28px;
   border-radius: var(--r-sm);
-  background: var(--primary);
+  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,13 +207,18 @@ html, body {
   align-items: center;
 }
 
-.avatar-stack .avatar {
+.avatar-stack > .avatar {
   margin-left: -6px;
   border: 2px solid var(--surface);
 }
 
-.avatar-stack .avatar:first-child {
+.avatar-stack > .avatar:first-child {
   margin-left: 0;
+}
+
+/* When avatars are wrapped in .avatar-wrapper for tooltip support */
+.avatar-stack .avatar-wrapper .avatar {
+  border: 2px solid var(--surface);
 }
 
 .avatar {
@@ -185,7 +243,92 @@ html, body {
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
+}
+
+.avatar-stack > .avatar-overflow {
   margin-left: -6px;
+}
+
+/* ─── AVATAR WRAPPER + TOOLTIP ───────────────────────── */
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.avatar-stack .avatar-wrapper {
+  margin-left: -6px;
+}
+
+.avatar-stack .avatar-wrapper:first-child {
+  margin-left: 0;
+}
+
+/* Move the stacking margin from .avatar to .avatar-wrapper when inside .avatar-stack */
+.avatar-stack .avatar-wrapper .avatar {
+  margin-left: 0;
+}
+
+.avatar-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #0a0a0a;
+  color: #fff;
+  border-radius: var(--r);
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+.avatar-wrapper:hover .avatar-tooltip {
+  display: block;
+}
+
+.avatar-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatar-tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatar-tooltip-detail {
+  color: #a3a3a3;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.typing-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #a3a3a3;
+  animation: typing-pulse 1.2s infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-pulse {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
 }
 
 /* ─── BUTTONS ─────────────────────────────────────────── */
@@ -213,7 +356,7 @@ html, body {
 }
 
 .btn-primary:hover {
-  background: #1a1a1a;
+  background: var(--primary-dark);
   box-shadow: 0 2px 6px rgba(0,0,0,.25);
   transform: translateY(-1px);
 }
@@ -263,6 +406,14 @@ html, body {
 .btn-icon {
   width: 32px;
   height: 32px;
+  padding: 0;
+  border-radius: var(--r);
+  justify-content: center;
+}
+
+.btn-icon-sm {
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: var(--r);
   justify-content: center;
@@ -485,7 +636,7 @@ html, body {
   transition: all 0.15s;
 }
 
-.copy-btn:hover { background: #1a1a1a; }
+.copy-btn:hover { background: var(--primary-dark); }
 
 .copy-btn.copied {
   background: #15803d;
@@ -562,21 +713,21 @@ html, body {
 }
 
 .landing-logo {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: var(--r-lg);
   background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
 }
 
 .landing-title {
-  font-size: 42px;
+  font-size: 52px;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   color: var(--text);
   margin-bottom: 14px;
   line-height: 1.1;
@@ -624,6 +775,60 @@ html, body {
   box-shadow: 0 0 0 3px var(--primary-ring);
 }
 
+.landing-recent {
+  max-width: 400px;
+  width: 100%;
+  margin: 16px auto 0;
+  text-align: left;
+}
+
+.landing-recent-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.landing-recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 13px;
+  transition: background 0.1s;
+  gap: 8px;
+}
+
+.landing-recent-row:hover {
+  background: var(--surface-2);
+}
+
+.landing-recent-title {
+  color: var(--text-2);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.landing-recent-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 .landing-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -640,6 +845,12 @@ html, body {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-icon {
@@ -737,7 +948,7 @@ html, body {
 
 .mode-btn:hover {
   color: var(--text-2);
-  background: rgba(0,0,0,0.04);
+  background: rgba(128,128,128,0.12);
 }
 
 .mode-btn-active {
@@ -843,22 +1054,41 @@ html, body {
 /* ─── COMMENTS PANE ──────────────────────────────────── */
 
 .comments-pane {
-  width: 300px;
+  width: 320px;
+  min-width: 200px;
+  max-width: 600px;
   flex-shrink: 0;
-  border-left: 1px solid var(--border);
+  border-left: none;
   background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+.comments-resizer {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--border);
+  transition: background 0.15s;
+  position: relative;
+  z-index: 1;
+}
+
+.comments-resizer:hover,
+.comments-resizer:active {
+  background: var(--border-2);
+}
+
 .comments-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  gap: 8px;
+  min-width: 0;
 }
 
 .comments-title {
@@ -887,6 +1117,7 @@ html, body {
 .comments-header-actions {
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .comment-new-form {
@@ -930,7 +1161,6 @@ html, body {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   background: var(--surface);
-  overflow: hidden;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1161,3 +1391,84 @@ html, body {
 }
 
 .cm-math-widget .katex { font-size: 1em; }
+
+/* ─── Reaction Bar ─────────────────────────────────────────── */
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  line-height: 1.4;
+}
+
+.reaction-pill:hover {
+  background: var(--surface-hover);
+}
+
+.reaction-pill-self {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.reaction-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.reaction-pill-self .reaction-count {
+  color: var(--text);
+}
+
+.reaction-add-wrapper {
+  position: relative;
+}
+
+.reaction-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-full);
+  border: 1px dashed var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.reaction-add-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--text-muted);
+  border-style: solid;
+}
+
+/* ─── Emoji Picker ─────────────────────────────────────────── */
+/* ─── Emoji Picker (emoji-picker-element web component) ─── */
+.emoji-tray-wrapper {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+}
+
+emoji-picker {
+  --border-radius: var(--r-lg);
+  --box-shadow: var(--shadow-lg);
+}

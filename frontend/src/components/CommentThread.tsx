@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Y from 'yjs';
 import { CommentComposer } from './CommentComposer';
+import { ReactionBar } from './ReactionBar';
 import { genUuid } from '@/lib/utils';
 
 export interface ReplyData {
@@ -11,6 +12,7 @@ export interface ReplyData {
   authorName: string;
   createdAt: number;
   text: string;
+  yMap: Y.Map<unknown>;
 }
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
   onActivate: () => void;
   onResolve: () => void;
 }
+
 
 function formatTime(ts: number): string {
   const d = new Date(ts);
@@ -45,6 +48,7 @@ function readReplies(replies: Y.Array<Y.Map<unknown>>): ReplyData[] {
     authorName: r.get('authorName') as string,
     createdAt: r.get('createdAt') as number,
     text: r.get('text') as string,
+    yMap: r,
   }));
 }
 
@@ -77,6 +81,7 @@ export function CommentThread({ threadMap, selfId, selfName, active, onActivate,
     reply.set('authorName', selfName);
     reply.set('createdAt', Date.now());
     reply.set('text', replyText);
+    reply.set('reactions', new Y.Map<unknown>());
     replies.push([reply]);
     setReplyOpen(false);
   }, [replies, selfId, selfName]);
@@ -100,6 +105,7 @@ export function CommentThread({ threadMap, selfId, selfName, active, onActivate,
             <span className="comment-time">{formatTime(createdAt)}</span>
           </div>
           <p className="comment-text">{text}</p>
+          <ReactionBar parentMap={threadMap} selfId={selfId} selfName={selfName} />
         </div>
       </div>
 
@@ -118,6 +124,7 @@ export function CommentThread({ threadMap, selfId, selfName, active, onActivate,
               <span className="comment-time">{formatTime(reply.createdAt)}</span>
             </div>
             <p className="comment-text">{reply.text}</p>
+            <ReactionBar parentMap={reply.yMap} selfId={selfId} selfName={selfName} />
           </div>
         </div>
       ))}

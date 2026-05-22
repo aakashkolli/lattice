@@ -1,35 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LatticeIcon } from '@/components/LatticeIcon';
 import { genUuid } from '@/lib/utils';
+import { RecentRoom, saveRecentRoom, loadRecentRooms } from '@/lib/recent-rooms';
+
+function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return 'yesterday';
+}
 
 export default function Home() {
   const router = useRouter();
   const [joinId, setJoinId] = useState('');
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
 
-  const createRoom = () => router.push(`/room/${genUuid()}`);
+  useEffect(() => {
+    setRecentRooms(loadRecentRooms());
+  }, []);
+
+  const createRoom = () => {
+    const id = genUuid();
+    saveRecentRoom(id, '');
+    router.push(`/room/${id}`);
+  };
 
   const joinRoom = () => {
     const id = joinId.trim();
     if (!id) return;
     const match = id.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
-    if (match) router.push(`/room/${match[0]}`);
+    if (match) {
+      saveRecentRoom(match[0], '');
+      router.push(`/room/${match[0]}`);
+    }
   };
 
   return (
     <main className="landing">
       <div className="landing-hero">
         <div className="landing-logo">
-          <LatticeIcon size={32} color="#ffffff" />
+          <LatticeIcon size={40} color="#ffffff" />
         </div>
 
         <h1 className="landing-title">Lattice</h1>
 
         <p className="landing-subtitle">
-          Real-time collaborative documents, powered by CRDTs and a Rust backend.
-          Open the same room in multiple tabs and watch changes sync instantly.
+          Write together without conflicts. CRDTs guarantee every edit merges correctly, and a Rust actor backend keeps every collaborator in sync.
         </p>
 
         <div className="landing-actions">
@@ -53,18 +73,33 @@ export default function Home() {
             className="btn btn-secondary"
             onClick={joinRoom}
             disabled={!joinId.trim()}
-            style={{ borderRadius: 'var(--r-full)' }}
+            style={{ borderRadius: 'var(--r-full)', padding: '10px 20px', fontSize: 13 }}
           >
             Join
           </button>
         </div>
+
+        {recentRooms.length > 0 && (
+          <div className="landing-recent">
+            <div className="landing-recent-label">Recent rooms</div>
+            {recentRooms.map((r) => (
+              <button key={r.id} className="landing-recent-row" onClick={() => router.push(`/room/${r.id}`)}>
+                <span className="landing-recent-title">{r.title || 'Untitled'}</span>
+                <span className="landing-recent-meta">
+                  <span className="room-id-chip">{r.id.slice(0, 8)}</span>
+                  <span>{relativeTime(r.visitedAt)}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="landing-features">
         <div className="feature-card">
           <div className="feature-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="13 2 13 9 20 9"/><polygon points="2 12 7 2 12 12 17 2 22 12"/>
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
           </div>
           <div className="feature-title">Real-time sync</div>
@@ -78,7 +113,7 @@ export default function Home() {
             </svg>
           </div>
           <div className="feature-title">CRDT-first</div>
-          <div className="feature-desc">Conflict-free merging — edits never lost</div>
+          <div className="feature-desc">Concurrent edits always merge correctly</div>
         </div>
         <div className="feature-card">
           <div className="feature-icon">
