@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PresenceState } from '@/lib/lattice-provider';
 import type { Text as YText } from 'yjs';
@@ -30,7 +30,6 @@ function initials(name: string): string {
 }
 
 interface Props {
-  roomId: string;
   title: string;
   cursors: PresenceState[];
   mode: EditorMode;
@@ -52,41 +51,23 @@ const MODE_LABELS: Record<EditorMode, string> = {
   markdown: 'Markdown',
 };
 
-// Track last-seen cursorFrom per clientId (stored as { pos, time })
-interface CursorTrack { pos: number; time: number; }
+function AvatarCard({ cursor, yText }: { cursor: PresenceState; yText: string | null }) {
+  const prevFromRef = useRef(cursor.cursorFrom);
+  const changedAtRef = useRef(Date.now());
 
-function AvatarCard({
-  cursor,
-  yText,
-  cursorTrackRef,
-}: {
-  cursor: PresenceState;
-  yText: YText | null;
-  cursorTrackRef: React.MutableRefObject<Map<string, CursorTrack>>;
-}) {
-  const color = avatarColor(cursor.name);
-
-  // Compute line number
-  let lineLabel: string | null = null;
-  if (yText && (cursor.cursorFrom > 0)) {
-    const text = yText.toString().slice(0, cursor.cursorFrom);
-    const lineNum = text.split('\n').length;
-    lineLabel = `line ${lineNum}`;
-  }
-
-  // Typing indicator — compare against tracked position
-  let isTyping = false;
-  const track = cursorTrackRef.current.get(cursor.clientId);
-  if (track) {
-    const changed = track.pos !== cursor.cursorFrom;
-    if (changed) {
-      cursorTrackRef.current.set(cursor.clientId, { pos: cursor.cursorFrom, time: Date.now() });
-      isTyping = true;
-    } else {
-      isTyping = Date.now() - track.time < 2000;
+  useEffect(() => {
+    if (prevFromRef.current !== cursor.cursorFrom) {
+      prevFromRef.current = cursor.cursorFrom;
+      changedAtRef.current = Date.now();
     }
-  } else {
-    cursorTrackRef.current.set(cursor.clientId, { pos: cursor.cursorFrom, time: Date.now() });
+  });
+
+  const color = avatarColor(cursor.name);
+  const isTyping = prevFromRef.current !== cursor.cursorFrom || Date.now() - changedAtRef.current < 2000;
+
+  let lineLabel: string | null = null;
+  if (yText !== null && cursor.cursorFrom > 0) {
+    lineLabel = `line ${yText.slice(0, cursor.cursorFrom).split('\n').length}`;
   }
 
   return (
@@ -95,14 +76,10 @@ function AvatarCard({
         <div className="avatar-tooltip-swatch" style={{ background: color }} />
         <span>{cursor.name}</span>
       </div>
-      {lineLabel && (
-        <div className="avatar-tooltip-detail">{lineLabel}</div>
-      )}
+      {lineLabel && <div className="avatar-tooltip-detail">{lineLabel}</div>}
       {isTyping && (
         <div className="typing-dots">
-          <div className="typing-dot" />
-          <div className="typing-dot" />
-          <div className="typing-dot" />
+          <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
         </div>
       )}
     </div>
@@ -129,7 +106,8 @@ export function Toolbar({
   const titleRef = useRef<HTMLInputElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
-  const cursorTrackRef = useRef<Map<string, CursorTrack>>(new Map());
+
+  const yTextStr = useMemo(() => yText?.toString() ?? null, [yText, cursors]);
 
   const maxAvatars = 3;
   const visible = cursors.slice(0, maxAvatars);
@@ -164,7 +142,6 @@ export function Toolbar({
       <button
         className="toolbar-brand"
         onClick={() => router.push('/')}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
       >
         <div className="toolbar-logo">
           <LatticeIcon size={16} color="#ffffff" />
@@ -295,14 +272,12 @@ export function Toolbar({
                   }}
                 >
                   {initials(c.name)}
-                  <AvatarCard cursor={c} yText={yText} cursorTrackRef={cursorTrackRef} />
                 </div>
+                <AvatarCard cursor={c} yText={yTextStr} />
               </div>
             ))}
             {overflow > 0 && (
-              <div className="avatar-wrapper">
-                <div className="avatar avatar-overflow">+{overflow}</div>
-              </div>
+              <div className="avatar avatar-overflow" style={{ marginLeft: -6 }}>+{overflow}</div>
             )}
           </div>
         )}
@@ -312,6 +287,7 @@ export function Toolbar({
           className="btn btn-ghost btn-icon-sm"
           onClick={toggleTheme}
           title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
         >
           {theme === 'light' ? (
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

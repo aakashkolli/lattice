@@ -206,7 +206,6 @@ export function Editor({ roomId, serverUrl }: Props) {
   return (
     <div className="app-root">
       <Toolbar
-        roomId={roomId}
         title={title}
         cursors={cursors}
         mode={mode}

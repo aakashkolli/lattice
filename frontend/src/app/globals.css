@@ -125,6 +125,10 @@ html, body {
   white-space: nowrap;
   text-decoration: none;
   color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
 .toolbar-brand:hover {
@@ -228,7 +232,6 @@ html, body {
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 600;
-  margin-left: -6px;
 }
 
 /* ─── AVATAR WRAPPER + TOOLTIP ───────────────────────── */
