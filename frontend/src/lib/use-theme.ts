@@ -22,7 +22,9 @@ function applyTheme(theme: Theme): void {
 }
 
 export function useTheme(): { theme: Theme; toggleTheme: () => void } {
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>(() =>
+    typeof window === 'undefined' ? 'light' : getPreferredTheme()
+  );
 
   useEffect(() => {
     const initial = getPreferredTheme();

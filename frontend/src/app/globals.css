@@ -61,7 +61,16 @@
   --primary-dark:  #ffffff;
   --primary-light: #1f1f1f;
   --primary-ring:  rgba(255,255,255,.12);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+  --shadow:    0 1px 3px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.18);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.3), 0 2px 4px -1px rgba(0,0,0,.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.3), 0 4px 6px -2px rgba(0,0,0,.18);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,.3), 0 10px 10px -5px rgba(0,0,0,.15);
 }
+
+[data-theme="dark"] .btn-danger { background: #2d1515; border-color: #5c1f1f; }
+[data-theme="dark"] .btn-danger:hover { background: #3d1a1a; }
 
 html, body {
   height: 100%;
@@ -229,7 +238,7 @@ html, body {
 }
 
 .btn-primary:hover {
-  background: #1a1a1a;
+  background: var(--primary-dark);
   box-shadow: 0 2px 6px rgba(0,0,0,.25);
   transform: translateY(-1px);
 }
@@ -501,7 +510,7 @@ html, body {
   transition: all 0.15s;
 }
 
-.copy-btn:hover { background: #1a1a1a; }
+.copy-btn:hover { background: var(--primary-dark); }
 
 .copy-btn.copied {
   background: #15803d;
@@ -753,7 +762,7 @@ html, body {
 
 .mode-btn:hover {
   color: var(--text-2);
-  background: rgba(0,0,0,0.04);
+  background: rgba(128,128,128,0.12);
 }
 
 .mode-btn-active {
