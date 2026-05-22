@@ -1054,22 +1054,41 @@ html, body {
 /* ─── COMMENTS PANE ──────────────────────────────────── */
 
 .comments-pane {
-  width: 300px;
+  width: 320px;
+  min-width: 200px;
+  max-width: 600px;
   flex-shrink: 0;
-  border-left: 1px solid var(--border);
+  border-left: none;
   background: var(--surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+.comments-resizer {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--border);
+  transition: background 0.15s;
+  position: relative;
+  z-index: 1;
+}
+
+.comments-resizer:hover,
+.comments-resizer:active {
+  background: var(--border-2);
+}
+
 .comments-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  gap: 8px;
+  min-width: 0;
 }
 
 .comments-title {
@@ -1098,6 +1117,7 @@ html, body {
 .comments-header-actions {
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .comment-new-form {
@@ -1141,7 +1161,6 @@ html, body {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   background: var(--surface);
-  overflow: hidden;
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1372,3 +1391,84 @@ html, body {
 }
 
 .cm-math-widget .katex { font-size: 1em; }
+
+/* ─── Reaction Bar ─────────────────────────────────────────── */
+.reaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.reaction-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  line-height: 1.4;
+}
+
+.reaction-pill:hover {
+  background: var(--surface-hover);
+}
+
+.reaction-pill-self {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.reaction-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.reaction-pill-self .reaction-count {
+  color: var(--text);
+}
+
+.reaction-add-wrapper {
+  position: relative;
+}
+
+.reaction-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-full);
+  border: 1px dashed var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.reaction-add-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--text-muted);
+  border-style: solid;
+}
+
+/* ─── Emoji Picker ─────────────────────────────────────────── */
+/* ─── Emoji Picker (emoji-picker-element web component) ─── */
+.emoji-tray-wrapper {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+}
+
+emoji-picker {
+  --border-radius: var(--r-lg);
+  --box-shadow: var(--shadow-lg);
+}
