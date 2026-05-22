@@ -22,11 +22,15 @@ function applyTheme(theme: Theme): void {
 }
 
 export function useTheme(): { theme: Theme; toggleTheme: () => void } {
-  const [theme, setTheme] = useState<Theme>(() =>
-    typeof window === 'undefined' ? 'light' : getPreferredTheme()
-  );
+  // Always initialize to 'light' for SSR consistency — the inline script in
+  // layout.tsx already sets data-theme on <html> before hydration, so the
+  // visual theme is correct. State syncs to the real value in useEffect.
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
+    const initial = getPreferredTheme();
+    setTheme(initial);
+
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
       const stored = localStorage.getItem(STORAGE_KEY);
