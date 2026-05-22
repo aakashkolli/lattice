@@ -4,22 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LatticeIcon } from '@/components/LatticeIcon';
 import { genUuid } from '@/lib/utils';
-
-interface RecentRoom {
-  id: string;
-  title: string;
-  visitedAt: number;
-}
-
-function saveRecentRoom(id: string, title: string = '') {
-  try {
-    const raw = localStorage.getItem('lattice_recent_rooms');
-    const rooms: RecentRoom[] = raw ? JSON.parse(raw) : [];
-    const filtered = rooms.filter((r) => r.id !== id);
-    filtered.unshift({ id, title, visitedAt: Date.now() });
-    localStorage.setItem('lattice_recent_rooms', JSON.stringify(filtered.slice(0, 5)));
-  } catch {}
-}
+import { RecentRoom, saveRecentRoom, loadRecentRooms } from '@/lib/recent-rooms';
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts;
@@ -35,10 +20,7 @@ export default function Home() {
   const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('lattice_recent_rooms');
-      if (raw) setRecentRooms(JSON.parse(raw));
-    } catch {}
+    setRecentRooms(loadRecentRooms());
   }, []);
 
   const createRoom = () => {

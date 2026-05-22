@@ -81,6 +81,17 @@
 [data-theme="dark"] .btn-danger { background: #2d1515; border-color: #5c1f1f; }
 [data-theme="dark"] .btn-danger:hover { background: #3d1a1a; }
 
+[data-theme="dark"] .avatar-tooltip {
+  background: #f0f0f0;
+  color: #0a0a0a;
+}
+[data-theme="dark"] .avatar-tooltip-detail {
+  color: #525252;
+}
+[data-theme="dark"] .typing-dot {
+  background: #525252;
+}
+
 html, body {
   height: 100%;
   font-family: var(--font);

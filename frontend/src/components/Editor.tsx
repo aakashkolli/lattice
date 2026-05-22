@@ -8,6 +8,7 @@ import { Toolbar, ExportFormat, EditorMode } from './Toolbar';
 import { useTheme } from '@/lib/use-theme';
 import dynamic from 'next/dynamic';
 import { genUuid, hashColor } from '@/lib/utils';
+import { saveRecentRoom } from '@/lib/recent-rooms';
 import { StatusBar } from './StatusBar';
 import { ShareModal } from './ShareModal';
 import { CommentsPane } from './CommentsPane';
@@ -69,7 +70,11 @@ export function Editor({ roomId, serverUrl }: Props) {
     provider.onStateChange = setConnState;
     provider.onPresence = setCursors;
 
-    yTitle.observe(() => { setTitle(yTitle.toString()); });
+    yTitle.observe(() => {
+      const t = yTitle.toString();
+      setTitle(t);
+      saveRecentRoom(roomId, t);  // keep recent room title in sync
+    });
 
     // Sync editor mode from CRDT so all collaborators share the same mode.
     yMeta.observe(() => {
