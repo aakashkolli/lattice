@@ -173,15 +173,15 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-zinc-950 antialiased dark:bg-[#0b0b0c] dark:text-zinc-50">
-      <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
+    <main className="h-screen overflow-y-auto bg-white text-zinc-950 antialiased dark:bg-[#0b0b0c] dark:text-zinc-50">
+      <div className="relative mx-auto flex min-h-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute left-[-8rem] top-[-8rem] h-80 w-80 rounded-full bg-zinc-100 blur-3xl dark:bg-white/5" />
           <div className="absolute bottom-[-8rem] right-[-6rem] h-96 w-96 rounded-full bg-zinc-200/60 blur-3xl dark:bg-white/5" />
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.025)_1px,transparent_1px)] bg-[size:72px_72px] opacity-40 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)]" />
         </div>
 
-        <div className="flex flex-1 flex-col items-center gap-10 pb-10 pt-8 lg:pt-12">
+        <div className="flex flex-col items-center gap-10 pb-4 pt-4 lg:pt-8">
           <section className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
             <div className="inline-flex items-center gap-3 rounded-xl border border-zinc-200/60 bg-[#f9f9fb] px-4 py-3 shadow-sm dark:border-[#1f1f23] dark:bg-[#121214]">
               <button
@@ -200,11 +200,11 @@ export default function Home() {
             </div>
 
             <div className="max-w-3xl space-y-6">
-              <h1 className="max-w-2xl text-5xl font-semibold tracking-[-0.05em] text-zinc-950 sm:text-6xl lg:text-7xl dark:text-zinc-50">
-                Write together without conflicts.
+              <h1 className="max-w-2xl text-5xl font-semibold tracking-[-0.05em] text-zinc-950 sm:text-6xl lg:text-6xl dark:text-zinc-50">
+                Write together<br />without conflicts.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-400">
-                CRDTs guarantee every edit merges correctly, and a Rust actor backend keeps every collaborator in sync.
+                CRDTs guarantee every edit merges correctly,<br />and a Rust actor backend keeps every collaborator in sync.
               </p>
             </div>
 
@@ -256,7 +256,7 @@ export default function Home() {
           </section>
         </div>
 
-        <section className="w-full pb-4 pt-2 sm:pt-4 lg:pb-0">
+        <section className="mt-8 w-full pb-6">
           <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-3">
             <div className="flex flex-col items-center rounded-xl border border-zinc-200/60 bg-[#f9f9fb] p-5 text-center shadow-sm dark:border-[#1f1f23] dark:bg-[#121214]">
               <Sparkles size={20} className="mb-4 text-zinc-700 dark:text-zinc-300" strokeWidth={1.9} />
