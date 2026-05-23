@@ -212,7 +212,6 @@ export function Editor({ roomId, serverUrl }: Props) {
         {mode === 'markdown' ? (
           <MarkdownEditor
             yText={yText}
-            provider={provider}
             cursors={cursors}
             onWordCount={handleWordCount}
             onCursorMove={handleCursorMove}

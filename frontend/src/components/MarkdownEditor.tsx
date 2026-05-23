@@ -19,7 +19,7 @@ import { languages } from '@codemirror/language-data';
 import { syntaxHighlighting, defaultHighlightStyle, HighlightStyle, syntaxTree } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import katex from 'katex';
-import type { LatticeProvider, PresenceState } from '@/lib/lattice-provider';
+import type { PresenceState } from '@/lib/lattice-provider';
 
 const LOCAL_ORIGIN = Symbol('cm-local');
 const syncAnnotation = Annotation.define<true>();
@@ -344,7 +344,6 @@ function applyDiff(yText: Y.Text, oldStr: string, newStr: string) {
 
 interface Props {
   yText: Y.Text;
-  provider: LatticeProvider;
   cursors: PresenceState[];
   onWordCount?: (words: number, chars: number) => void;
   onCursorMove?: (from: number, to: number) => void;
