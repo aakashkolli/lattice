@@ -8,11 +8,9 @@ import {
   Clock3,
   Hash,
   LayoutPanelLeft,
-  MoonStar,
   Plus,
   Repeat2,
   Sparkles,
-  SunMedium,
 } from 'lucide-react';
 import { LatticeIcon } from '@/components/LatticeIcon';
 import { genUuid } from '@/lib/utils';
@@ -183,23 +181,17 @@ export default function Home() {
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.025)_1px,transparent_1px)] bg-[size:72px_72px] opacity-40 dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)]" />
         </div>
 
-        <header className="flex items-center justify-end py-2">
-          <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200/60 bg-zinc-50 text-zinc-700 shadow-sm transition hover:bg-white hover:text-zinc-950 hover:shadow dark:border-[#1f1f23] dark:bg-[#121214] dark:text-zinc-300 dark:hover:bg-[#18181b] dark:hover:text-white"
-            onClick={toggleTheme}
-            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-          >
-            {theme === 'light' ? <MoonStar size={18} strokeWidth={1.9} /> : <SunMedium size={18} strokeWidth={1.9} />}
-          </button>
-        </header>
-
         <div className="flex flex-1 flex-col items-center gap-10 pb-10 pt-8 lg:pt-12">
           <section className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
             <div className="inline-flex items-center gap-3 rounded-xl border border-zinc-200/60 bg-[#f9f9fb] px-4 py-3 shadow-sm dark:border-[#1f1f23] dark:bg-[#121214]">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+              <button
+                className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white transition hover:opacity-80 dark:bg-white dark:text-zinc-950"
+                onClick={toggleTheme}
+                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
                 <LatticeIcon size={20} />
-              </div>
+              </button>
               <div className="min-w-0">
                 <div className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-4xl">
                   Lattice
