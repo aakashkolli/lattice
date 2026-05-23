@@ -10,14 +10,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Lattice — Collaborative Documents',
+  title: 'Lattice - Collaborative Document Editor',
   description: 'Real-time collaborative document editor powered by CRDTs and a Rust backend',
   icons: {
     icon: '/favicon.svg',
   },
 };
 
-const themeScript = `(function(){try{var s=localStorage.getItem('lattice_theme');if(s==='light'||s==='dark'){document.documentElement.dataset.theme=s;}else{document.documentElement.dataset.theme=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}}catch(e){}})();`;
+const themeScript = `(function(){try{var s=localStorage.getItem('lattice_theme');var t=(s==='light'||s==='dark')?s:(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

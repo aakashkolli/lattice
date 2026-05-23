@@ -14,6 +14,15 @@ export function saveRecentRoom(id: string, title: string = ''): void {
   } catch {}
 }
 
+export function removeRecentRoom(id: string): void {
+  try {
+    const raw = localStorage.getItem('lattice_recent_rooms');
+    const rooms: RecentRoom[] = raw ? JSON.parse(raw) : [];
+    const filtered = rooms.filter((room) => room.id !== id);
+    localStorage.setItem('lattice_recent_rooms', JSON.stringify(filtered));
+  } catch {}
+}
+
 export function loadRecentRooms(): RecentRoom[] {
   try {
     const raw = localStorage.getItem('lattice_recent_rooms');
