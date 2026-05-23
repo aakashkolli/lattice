@@ -10,7 +10,6 @@ import dynamic from 'next/dynamic';
 import { genUuid, hashColor } from '@/lib/utils';
 import { saveRecentRoom } from '@/lib/recent-rooms';
 import { StatusBar } from './StatusBar';
-import { ShareModal } from './ShareModal';
 import { CommentsPane } from './CommentsPane';
 
 const TextEditor = dynamic(
@@ -47,7 +46,6 @@ export function Editor({ roomId, serverUrl }: Props) {
   const [title, setTitle] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
-  const [shareOpen, setShareOpen] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [mode, setMode] = useState<EditorMode>('text');
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -121,6 +119,10 @@ export function Editor({ roomId, serverUrl }: Props) {
       color: hashColor(userNameRef.current),
     });
     setMdSelection(from !== to ? { from, to } : null);
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    await navigator.clipboard.writeText(window.location.href);
   }, []);
 
   const handleNewRoom = useCallback(() => {
@@ -240,7 +242,7 @@ export function Editor({ roomId, serverUrl }: Props) {
         toggleTheme={toggleTheme}
         yText={yTextRef.current}
         onTitleChange={handleTitleChange}
-        onShare={() => setShareOpen(true)}
+        onShare={handleShare}
         onNewRoom={handleNewRoom}
         onExport={handleExport}
         onClearDoc={handleClearDoc}
@@ -291,14 +293,6 @@ export function Editor({ roomId, serverUrl }: Props) {
         charCount={charCount}
       />
 
-      {shareOpen && (
-        <ShareModal
-          roomId={roomId}
-          cursors={cursors}
-          selfName={userNameRef.current}
-          onClose={() => setShareOpen(false)}
-        />
-      )}
     </div>
   );
 }

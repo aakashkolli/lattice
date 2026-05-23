@@ -109,6 +109,13 @@ export function Toolbar({
   const titleRef = useRef<HTMLInputElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShareClick = useCallback(() => {
+    onShare();
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 1500);
+  }, [onShare]);
 
   const yTextStr = useMemo(() => yText?.toString() ?? null, [yText, cursors]);
 
@@ -318,13 +325,24 @@ export function Toolbar({
           </svg>
         </button>
 
-        {/* Share — keeps text label as primary CTA */}
-        <button className="btn btn-primary btn-sm" onClick={onShare}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-          </svg>
-          Share
+        {/* Share — copies URL, shows brief "Copied!" confirmation */}
+        <button className="btn btn-primary btn-sm" onClick={handleShareClick}>
+          {shareCopied ? (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              Share
+            </>
+          )}
         </button>
       </div>
     </header>
