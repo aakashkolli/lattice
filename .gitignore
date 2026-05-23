@@ -22,3 +22,7 @@ Thumbs.db
 
 # Environment
 .env
+
+# Tool artifacts
+.claude/worktrees/
+.superpowers/

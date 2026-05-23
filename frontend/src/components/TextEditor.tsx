@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import * as Y from 'yjs';
-import type { LatticeProvider, PresenceState } from '@/lib/lattice-provider';
+import type { PresenceState } from '@/lib/lattice-provider';
 import { CursorOverlay } from './CursorOverlay';
 
 interface Props {
   yText: Y.Text;
-  provider: LatticeProvider;
   cursors: PresenceState[];
   onWordCount?: (words: number, chars: number) => void;
   onCursorMove?: (from: number, to: number) => void;
@@ -15,11 +14,7 @@ interface Props {
   textareaRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
-/**
- * Minimal-diff application of textarea edits into a Yjs text.
- * Computes the common prefix/suffix to find the changed region and
- * applies only the necessary delete + insert operations.
- */
+// Minimal-diff: compute common prefix/suffix to find changed region and apply only delete+insert.
 function applyDiff(yText: Y.Text, oldStr: string, newStr: string) {
   const minLen = Math.min(oldStr.length, newStr.length);
 
@@ -42,7 +37,7 @@ function applyDiff(yText: Y.Text, oldStr: string, newStr: string) {
   if (insertStr.length > 0) yText.insert(prefixEnd, insertStr);
 }
 
-export function TextEditor({ yText, provider, cursors, onWordCount, onCursorMove, textareaRef: externalRef }: Props) {
+export function TextEditor({ yText, cursors, onWordCount, onCursorMove, textareaRef: externalRef }: Props) {
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalRef ?? internalRef;
   const prevValueRef = useRef('');
@@ -83,7 +78,6 @@ export function TextEditor({ yText, provider, cursors, onWordCount, onCursorMove
     const oldValue = prevValueRef.current;
     if (newValue === oldValue) return;
 
-    // BUG-FIX: do NOT pass provider as the transaction origin.
     yText.doc!.transact(() => {
       applyDiff(yText, oldValue, newValue);
     });

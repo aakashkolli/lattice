@@ -204,7 +204,6 @@ export function Editor({ roomId, serverUrl }: Props) {
 
   const doc = docRef.current;
   const yText = yTextRef.current;
-  const provider = providerRef.current;
 
   const mainContent = (
     <main className={`editor-main ${commentsOpen ? 'editor-main-with-comments' : ''}`}>
@@ -219,7 +218,6 @@ export function Editor({ roomId, serverUrl }: Props) {
         ) : (
           <TextEditor
             yText={yText}
-            provider={provider}
             cursors={cursors}
             onWordCount={handleWordCount}
             onCursorMove={handleCursorMove}
