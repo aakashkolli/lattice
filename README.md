@@ -1,5 +1,7 @@
 # Lattice - CRDT Collaborative Text Editor
 
+**Live:** https://lattice-ak.vercel.app
+
 A real-time collaborative editor with Markdown and comments support, built on CRDT synchronization, a Rust actor-model backend, and a custom binary WebSocket protocol.
 
 Multiple users can edit the same document simultaneously across two modes: a plain text editor and a live-preview Markdown editor. Comments are anchored to text ranges using Yjs relative positions so they survive concurrent edits.
