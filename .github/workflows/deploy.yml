@@ -10,6 +10,10 @@ jobs:
   deploy-frontend:
     name: Frontend → Vercel
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v5
 
@@ -19,13 +23,10 @@ jobs:
       - name: Deploy (production on main, preview on PR)
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
+            vercel --prod --yes
           else
-            vercel --yes --token ${{ secrets.VERCEL_TOKEN }}
+            vercel --yes
           fi
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
   deploy-backend:
     name: Backend → Fly.io
