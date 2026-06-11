@@ -7,27 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  deploy-frontend:
-    name: Frontend → Vercel
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy (production on main, preview on PR)
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            vercel --prod --yes
-          else
-            vercel --yes
-          fi
-
   deploy-backend:
     name: Backend → Fly.io
     runs-on: ubuntu-latest
