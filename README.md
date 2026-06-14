@@ -1,4 +1,4 @@
-# Lattice - CRDT Collaborative Text Editor
+# Lattice - Collaborative Document Editor
 
 **Live:** https://lattice-ak.vercel.app
 
